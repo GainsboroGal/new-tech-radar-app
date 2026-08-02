@@ -28,10 +28,38 @@ export function AdminPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const urls = ["/api/scan-status", "/.netlify/functions/get-scan-status"];
+    let lastErr = "No scan-status endpoint responded with JSON.";
     try {
-      const res = await fetch("/.netlify/functions/get-scan-status");
-      if (!res.ok) throw new Error(`Status ${res.status}`);
-      setStatus((await res.json()) as ScanStatus);
+      let data: ScanStatus | null = null;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { headers: { Accept: "application/json" } });
+          if (!res.ok) {
+            lastErr = `Status ${res.status} from ${url}`;
+            continue;
+          }
+          const text = await res.text();
+          if (
+            !text ||
+            text.trimStart().startsWith("<!DOCTYPE") ||
+            text.trimStart().startsWith("<html")
+          ) {
+            lastErr = "API returned HTML (function may not be deployed yet).";
+            continue;
+          }
+          data = JSON.parse(text) as ScanStatus;
+          break;
+        } catch (e) {
+          lastErr = e instanceof Error ? e.message : "Parse error";
+        }
+      }
+      if (!data) {
+        setError(lastErr);
+        setStatus(null);
+      } else {
+        setStatus(data);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load scan status");
       setStatus(null);
@@ -100,14 +128,8 @@ export function AdminPage() {
           >
             <Stat label="Current version" value={status?.currentVersion ?? "—"} />
             <Stat label="Published count" value={String(status?.opportunityCount ?? "—")} />
-            <Stat
-              label="Scan status"
-              value={status?.scanMeta?.status ?? "unknown"}
-            />
-            <Stat
-              label="Lock"
-              value={status?.lock ? `Held by ${status.lock.owner}` : "Free"}
-            />
+            <Stat label="Scan status" value={status?.scanMeta?.status ?? "unknown"} />
+            <Stat label="Lock" value={status?.lock ? `Held by ${status.lock.owner}` : "Free"} />
           </div>
           {status?.scanMeta?.message && (
             <p style={{ marginTop: "var(--space-3)", fontSize: "13px", color: "var(--text-secondary)" }}>
