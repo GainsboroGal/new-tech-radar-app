@@ -1,0 +1,52 @@
+:root {
+  /* Dark (default) — high-end technical journal */
+  --bg-primary: #111315;
+  --surface-primary: #181a1c;
+  --surface-elevated: #202327;
+  --surface-subtle: #151719;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --text-primary: #f4f5f6;
+  --text-secondary: #aeb6bd;
+  --text-muted: #7d858c;
+  --accent: #5cb8c8;
+  --accent-muted: rgba(92, 184, 200, 0.14);
+  --accent-border: rgba(92, 184, 200, 0.38);
+  --success: #5ea97a;
+  --warning: #d4a24d;
+  --error: #c96a6a;
+
+  --font-sans: "Inter", "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-primary: #f7f8f9;
+    --surface-primary: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-subtle: #eef0f2;
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.14);
+    --text-primary: #141618;
+    --text-secondary: #4a5259;
+    --text-muted: #6b737b;
+    --accent: #2a8a9a;
+    --accent-muted: rgba(42, 138, 154, 0.12);
+    --accent-border: rgba(42, 138, 154, 0.35);
+  }
+}
