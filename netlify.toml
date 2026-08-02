@@ -5,6 +5,7 @@
 
 [functions]
   node_bundler = "esbuild"
+  directory = "netlify/functions"
 
 [[headers]]
   for = "/*"
@@ -15,16 +16,20 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     X-XSS-Protection = "0"
 
+# API routes — proxy to functions (Config path also serves these)
 [[redirects]]
   from = "/api/opportunities"
   to = "/.netlify/functions/get-opportunities"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/scan-status"
   to = "/.netlify/functions/get-scan-status"
   status = 200
+  force = true
 
+# SPA fallback — must stay last; force=false so real assets win
 [[redirects]]
   from = "/*"
   to = "/index.html"

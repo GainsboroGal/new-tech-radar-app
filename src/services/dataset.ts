@@ -13,26 +13,86 @@ export type Dataset = {
   source: "live" | "seed" | "emergency";
 };
 
-export async function loadDataset(): Promise<Dataset> {
+const LIVE_URLS = [
+  "/api/opportunities",
+  "/.netlify/functions/get-opportunities",
+];
+
+/** Safely parse JSON; return null if the body is HTML or invalid. */
+async function readJson(res: Response): Promise<unknown | null> {
+  const ct = res.headers.get("content-type") || "";
+  const text = await res.text();
+  if (!text) return null;
+  // SPA fallback returns HTML — treat as non-API
+  if (
+    ct.includes("text/html") ||
+    text.trimStart().startsWith("<!DOCTYPE") ||
+    text.trimStart().startsWith("<html")
+  ) {
+    return null;
+  }
   try {
-    const res = await fetch("/.netlify/functions/get-opportunities");
-    if (res.ok) {
-      const data = await res.json();
-      const opportunities = OpportunityArraySchema.parse(data.opportunities ?? data.items ?? []);
-      const scanMeta = ScanMetaSchema.parse(
-        data.scanMeta ?? {
-          lastScan: data.lastScan ?? null,
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function tryLiveApi(): Promise<Dataset | null> {
+  for (const url of LIVE_URLS) {
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) continue;
+      const data = await readJson(res);
+      if (!data || typeof data !== "object") continue;
+
+      const body = data as Record<string, unknown>;
+      const rawList = body.opportunities ?? body.items ?? [];
+      const parsed = OpportunityArraySchema.safeParse(rawList);
+      if (!parsed.success || parsed.data.length === 0) continue;
+
+      const metaParsed = ScanMetaSchema.safeParse(
+        body.scanMeta ?? {
+          lastScan: body.lastScan ?? null,
           status: "ok",
         }
       );
-      if (opportunities.length > 0) {
-        return { opportunities, scanMeta, source: "live" };
-      }
-    }
-  } catch {
-    // fall through
-  }
+      const scanMeta = metaParsed.success
+        ? metaParsed.data
+        : {
+            lastScan: null,
+            examined: parsed.data.length,
+            kept: parsed.data.length,
+            suppressed: 0,
+            partial: false,
+            status: "ok" as const,
+            message: "Live snapshot loaded.",
+          };
 
+      return {
+        opportunities: parsed.data,
+        scanMeta,
+        source: "live",
+      };
+    } catch {
+      // try next URL
+    }
+  }
+  return null;
+}
+
+/**
+ * Load the public dataset.
+ * Priority: live API → validated seed → emergency snapshot.
+ * Never returns an empty broken state.
+ */
+export async function loadDataset(): Promise<Dataset> {
+  const live = await tryLiveApi();
+  if (live) return live;
+
+  // 2. Validated seed (bundled)
   try {
     const opportunities = OpportunityArraySchema.parse(seed);
     return {
@@ -44,7 +104,7 @@ export async function loadDataset(): Promise<Dataset> {
         suppressed: 0,
         partial: false,
         status: "never",
-        message: "Serving validated seed data (no live scan yet).",
+        message: "Serving validated seed data (no live snapshot yet).",
       },
       source: "seed",
     };
@@ -52,6 +112,7 @@ export async function loadDataset(): Promise<Dataset> {
     console.error("[dataset] Seed validation failed", err);
   }
 
+  // 3. Emergency snapshot (last resort)
   const opportunities = OpportunityArraySchema.parse(emergency.opportunities);
   const scanMeta = ScanMetaSchema.parse(emergency.scanMeta);
   return {
@@ -61,6 +122,7 @@ export async function loadDataset(): Promise<Dataset> {
   };
 }
 
+/** Synchronous access to the emergency snapshot for build-time or SSR use */
 export function getEmergencySnapshot(): Dataset {
   return {
     opportunities: OpportunityArraySchema.parse(emergency.opportunities),
