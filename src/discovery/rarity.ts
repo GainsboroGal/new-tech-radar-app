@@ -43,7 +43,6 @@ export function computeRarityScore(
   }
 ): { score: number; signals: RaritySignals; mode: string } {
   const topics = opp.topics.map((t) => t.toLowerCase());
-  const topicSet = new Set(topics);
 
   // Unusual topic combination
   const unusualTopicCombo =

@@ -84,7 +84,7 @@ export function buildWhyRelativelyUncommon(
 }
 
 export function buildWhyRetained(
-  opp: Opportunity,
+  _opp: Opportunity,
   clusterRank: number,
   clusterSize: number
 ): string {
