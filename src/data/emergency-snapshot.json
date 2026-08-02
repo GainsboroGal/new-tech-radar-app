@@ -1,0 +1,14 @@
+{
+  "version": "emergency-2026-07-31",
+  "generatedAt": "2026-07-31T14:00:00Z",
+  "opportunities": [],
+  "scanMeta": {
+    "lastScan": "2026-07-30T18:00:00Z",
+    "examined": 12,
+    "kept": 3,
+    "suppressed": 1,
+    "partial": false,
+    "status": "ok",
+    "message": "Emergency static snapshot — used when live data is unavailable."
+  }
+}
